@@ -1,5 +1,6 @@
 // services/courseService.js
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+const data = await supabase.from('courses').select('*')
 
 export const courseService = {
   // Get all courses

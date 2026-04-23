@@ -1,15 +1,19 @@
-import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Missing Supabase environment variables. Check your .env file.");
+  console.warn('Missing Supabase environment variables - using dummy client')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  }
-});
+const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
+
+// Named export
+export { supabase }
+
+// Default export (what adminContentService.js is trying to use)
+export default supabase

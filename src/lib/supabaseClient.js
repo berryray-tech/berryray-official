@@ -5,7 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Missing Supabase environment variables - using dummy client')
+  console.warn('Missing Supabase environment variables')
 }
 
 const supabase = (supabaseUrl && supabaseAnonKey) 
@@ -15,5 +15,5 @@ const supabase = (supabaseUrl && supabaseAnonKey)
 // Named export
 export { supabase }
 
-// Default export (what adminContentService.js is trying to use)
+// Default export - THIS IS WHAT YOU NEED
 export default supabase

@@ -647,8 +647,8 @@ export default function Home() {
               © {new Date().getFullYear()} BerryRay Technologies. All rights reserved.
             </p>
             <p className="text-xs text-slate-600 mt-2">
-              RC:  9351504 {certificates.find(c => c.title.includes('CAC'))?.certificate_number || 'XXXXX'} | 
-              SMEDAN Reg: SUID-3622-7935-0075-7139 {certificates.find(c => c.title.includes('SMEDAN'))?.certificate_number || 'XXXXX'}
+              RC:  9351504 {certificates.find(c => c.title.includes('CAC'))?.certificate_number || ''} | 
+              SMEDAN Reg: SUID-3622-7935-0075-7139 {certificates.find(c => c.title.includes('SMEDAN'))?.certificate_number || ''}
             </p>
           </div>
         </div>

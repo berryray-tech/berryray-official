@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 export default function PaymentModal({ open, onClose, course }) {
   const [filePreview, setFilePreview] = useState(null);
   const bank = {
-    name: "Zenith Bank",
-    accountName: "Osuji Chinonso Charles",
-    accountNumber: "1234567890",
+    name: "Providus Bank",
+    accountName: "Berryray Technologies-lco",
+    accountNumber: "9642518074",
   };
 
   if (!open) return null;

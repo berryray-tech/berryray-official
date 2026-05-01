@@ -340,9 +340,9 @@ const EnhancedPaymentModal = ({ open, course, enrollmentMethod, onClose }) => {
                           <p className="text-2xl font-bold text-white">
                             ₦{enrollmentMethod === "full" ? course.price.toLocaleString() : Math.round(total).toLocaleString()}
                           </p>
-                          <p className="text-gray-400">Bank: Access Bank</p>
-                          <p className="text-gray-400">Account: 1234567890</p>
-                          <p className="text-gray-400">Name: Tech Academy</p>
+                          <p className="text-gray-400">Bank: Providus Bank</p>
+                          <p className="text-gray-400">Account Number: 9642518074</p>
+                          <p className="text-gray-400">Name: Berryray Technologies-lco</p>
                         </div>
                         <p className="text-sm text-gray-400 mt-4">You'll need to provide your email and phone for verification</p>
                       </motion.div>

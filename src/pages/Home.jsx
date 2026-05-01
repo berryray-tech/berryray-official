@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import NewsBanner from "../components/NewsBanner";
 import Testimonies from "./Admin/Testimonies";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import supabase from "../lib/supabaseClient";
 
 // Updated imports - make sure the file name matches exactly
@@ -24,118 +24,64 @@ export default function Home() {
   // New state for certificates
   const [certificates, setCertificates] = useState([]);
   const [selectedPdf, setSelectedPdf] = useState(null);
+  
+  // State for dropdown menu
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedLink, setSelectedLink] = useState(null);
 
+  // External links configuration
+  const externalLinks = [
+    {
+      id: 1,
+      title: "POST-UTME Application Form",
+      description: "Apply for POST-UTME admission",
+      url: "https://forms.gle/HEQJyBDFyHjwPRPC8",
+      icon: "📝",
+      color: "from-blue-500 to-blue-600",
+      bgGradient: "from-blue-500/20 to-blue-600/20",
+      buttonText: "Fill POST-UTME Form",
+      category: "Application"
+    },
+    {
+      id: 2,
+      title: "Google Classroom",
+      description: "Access your courses and materials",
+      url: "https://classroom.google.com", // Replace with your actual Google Classroom link
+      icon: "🎓",
+      color: "from-green-500 to-green-600",
+      bgGradient: "from-green-500/20 to-green-600/20",
+      buttonText: "Open Google Classroom",
+      category: "Learning"
+    },
+    {
+      id: 3,
+      title: "Web App Portal",
+      description: "Access student portal and resources",
+      url: "https://your-web-app.com", // Replace with your actual web app URL
+      icon: "🌐",
+      color: "from-purple-500 to-purple-600",
+      bgGradient: "from-purple-500/20 to-purple-600/20",
+      buttonText: "Launch Web App",
+      category: "Portal"
+    }
+  ];
+
+  const handleLinkSelect = (link) => {
+    setSelectedLink(link);
+    setIsDropdownOpen(false);
+    window.open(link.url, "_blank", "noopener,noreferrer");
+  };
+
+  // Close dropdown when clicking outside
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        setErrors({ banners: null, testimonies: null, quote: null });
-
-        // Load all data in parallel
-        const [bannerData, testimonyData, quoteData, certificateData] = await Promise.allSettled([
-          fetchActiveBanners(),
-          fetchPublicTestimonies(), // Use the safer public function
-          fetchQuote(),
-          fetchCertificates() // New function to fetch certificates
-        ]);
-
-        // Handle banners
-        if (bannerData.status === 'fulfilled') {
-          setBanners(bannerData.value || []);
-        } else {
-          console.error("Error loading banners:", bannerData.reason);
-          setErrors(prev => ({ ...prev, banners: "Failed to load news banners" }));
-        }
-
-        // Handle testimonies
-        if (testimonyData.status === 'fulfilled') {
-          setTestimonies(testimonyData.value || []);
-        } else {
-          console.error("Error loading testimonies:", testimonyData.reason);
-          setErrors(prev => ({ ...prev, testimonies: "Failed to load testimonials" }));
-        }
-
-        // Handle quote
-        if (quoteData.status === 'fulfilled') {
-          setQuote(quoteData.value);
-        } else {
-          console.error("Error loading quote:", quoteData.reason);
-          setErrors(prev => ({ ...prev, quote: "Using default quote" }));
-        }
-
-        // Handle certificates
-        if (certificateData.status === 'fulfilled') {
-          setCertificates(certificateData.value || []);
-        } else {
-          console.error("Error loading certificates:", certificateData.reason);
-        }
-
-      } catch (error) {
-        console.error("Unexpected error loading home page data:", error);
-      } finally {
-        setLoading(false);
+    const handleClickOutside = (event) => {
+      if (isDropdownOpen && !event.target.closest(".dropdown-container")) {
+        setIsDropdownOpen(false);
       }
-    }
-
-    async function fetchQuote() {
-      try {
-        const { data, error } = await supabase
-          .from("site_meta")
-          .select("value")
-          .eq("key", "home_quote")
-          .single();
-
-        if (error) {
-          console.log("No custom quote found, using default");
-          throw error;
-        }
-
-        if (data?.value) {
-          try {
-            const parsed = JSON.parse(data.value);
-            return parsed;
-          } catch (parseError) {
-            console.error("Error parsing quote:", parseError);
-          }
-        }
-        
-        // Return default quote
-        return {
-          text: "Science is a way of thinking much more than it is a body of knowledge.",
-          author: "Carl Sagan",
-        };
-      } catch (error) {
-        // Return default quote on any error
-        return {
-          text: "Science is a way of thinking much more than it is a body of knowledge.",
-          author: "Carl Sagan",
-        };
-      }
-    }
-
-    // New function to fetch certificates
-    async function fetchCertificates() {
-      try {
-        const { data, error } = await supabase
-          .from("certificates")
-          .select("*")
-          .eq("is_active", true)
-          .order("display_order", { ascending: true });
-
-        if (error) {
-          console.error("Error fetching certificates:", error);
-          return [];
-        }
-
-        return data || [];
-      } catch (error) {
-        console.error("Error in fetchCertificates:", error);
-        return [];
-      }
-    }
-
-    loadData();
-  }, []);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isDropdownOpen]);
 
   // Function to handle PDF viewing
   const handleViewPdf = (certificate) => {
@@ -316,27 +262,118 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </Link>
-
-              {/* NEW GLASS EFFECT BUTTON FOR EXTERNAL FORM */}
-              <a
-                href="https://forms.gle/HEQJyBDFyHjwPRPC8"  // CHANGE THIS TO YOUR ACTUAL FORM LINK
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-xl backdrop-blur-md bg-white/5 hover:bg-white/15 border border-white/20 hover:border-white/40 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] relative overflow-hidden"
-                aria-label="External Form"
-              >
-                {/* Glass shimmer effect */}
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                
-                <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span className="font-semibold text-base sm:text-lg">Fill POST-UTME Form Here</span>
-                <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
             </div>
+
+            {/* Professional Glass Dropdown Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
+              className="relative dropdown-container"
+            >
+              <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 border border-white/20 hover:border-white/30 transition-all duration-300 shadow-2xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Quick Access Portal</h3>
+                    <p className="text-xs text-slate-400">Choose a service to continue</p>
+                  </div>
+                </div>
+
+                {/* Dropdown Button */}
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="w-full group relative flex items-center justify-between px-6 py-4 rounded-xl backdrop-blur-md bg-gradient-to-r from-slate-800/50 to-slate-900/50 hover:from-slate-700/50 hover:to-slate-800/50 border border-white/20 hover:border-white/40 transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <span className="font-medium text-white">Select an option</span>
+                  </div>
+                  <motion.svg
+                    animate={{ rotate: isDropdownOpen ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </motion.svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute z-50 w-full mt-2 left-0"
+                    >
+                      <div className="backdrop-blur-2xl bg-slate-900/95 rounded-xl border border-white/20 shadow-2xl overflow-hidden">
+                        <div className="p-2 space-y-1">
+                          {externalLinks.map((link) => (
+                            <motion.button
+                              key={link.id}
+                              whileHover={{ scale: 1.02, x: 5 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleLinkSelect(link)}
+                              className="w-full group relative flex items-start gap-4 p-4 rounded-lg hover:bg-white/10 transition-all duration-300 text-left overflow-hidden"
+                            >
+                              {/* Hover gradient effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
+                              
+                              {/* Icon */}
+                              <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${link.bgGradient} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                                <span className="text-2xl">{link.icon}</span>
+                              </div>
+                              
+                              {/* Content */}
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                  <h4 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                                    {link.title}
+                                  </h4>
+                                  <span className={`text-xs px-2 py-1 rounded-full bg-gradient-to-r ${link.bgGradient} text-white/80`}>
+                                    {link.category}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-slate-400 mb-2">{link.description}</p>
+                                <div className={`inline-flex items-center gap-2 text-xs font-medium bg-gradient-to-r ${link.color} bg-clip-text text-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}>
+                                  <span>{link.buttonText}</span>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
+                        
+                        {/* Footer info */}
+                        <div className="border-t border-white/10 p-3 bg-white/5">
+                          <p className="text-xs text-slate-500 text-center flex items-center justify-center gap-2">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            Secure & Encrypted Access
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
 
             {/* Quote Card */}
             <motion.div
@@ -667,7 +704,7 @@ export default function Home() {
               © {new Date().getFullYear()} BerryRay Technologies. All rights reserved.
             </p>
             <p className="text-xs text-slate-600 mt-2">
-              RC:  9351504 {certificates.find(c => c.title.includes('CAC'))?.certificate_number || ''} | 
+              CAC RC:  9351504 {certificates.find(c => c.title.includes('CAC'))?.certificate_number || ''} | 
               SMEDAN Reg: SUID-3622-7935-0075-7139 {certificates.find(c => c.title.includes('SMEDAN'))?.certificate_number || ''}
             </p>
           </div>

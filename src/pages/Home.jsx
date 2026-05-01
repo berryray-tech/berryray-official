@@ -133,7 +133,7 @@ export default function Home() {
         .select("*")
         .eq("is_active", true)
         .order("display_order", { ascending: true })
-        .limit(10); // Limit the number of certificates
+        .limit(10);
 
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
@@ -157,13 +157,11 @@ export default function Home() {
         setLoading(true);
         setErrors({ banners: null, testimonies: null, quote: null });
 
-        // Load critical data first (banners and quote)
         const [bannerData, quoteData] = await Promise.allSettled([
           fetchActiveBanners(),
           fetchQuote()
         ]);
 
-        // Handle banners (critical)
         if (bannerData.status === 'fulfilled' && isMounted) {
           setBanners(bannerData.value || []);
         } else if (isMounted) {
@@ -171,14 +169,12 @@ export default function Home() {
           setErrors(prev => ({ ...prev, banners: "Failed to load news banners" }));
         }
 
-        // Handle quote (critical)
         if (quoteData.status === 'fulfilled' && isMounted) {
           setQuote(quoteData.value);
         } else if (isMounted) {
           setErrors(prev => ({ ...prev, quote: "Using default quote" }));
         }
 
-        // Load non-critical data after a small delay
         setTimeout(async () => {
           if (!isMounted) return;
           
@@ -217,7 +213,6 @@ export default function Home() {
     };
   }, [fetchQuote, fetchCertificates]);
 
-  // Function to handle PDF viewing
   const handleViewPdf = (certificate) => {
     setSelectedPdf(certificate);
   };
@@ -226,7 +221,6 @@ export default function Home() {
     setSelectedPdf(null);
   };
 
-  // Show minimal loading state (faster)
   if (loading && banners.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6">
@@ -240,7 +234,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white overflow-x-hidden">
       {/* PDF Viewer Modal */}
       <AnimatePresence>
         {selectedPdf && (
@@ -307,7 +301,6 @@ export default function Home() {
         )}
       </AnimatePresence>
       
-      {/* Pass the fetched banners data as a prop */}
       <NewsBanner banners={banners} />
 
       {/* Navigation */}
@@ -348,7 +341,6 @@ export default function Home() {
             </Link>
           </div>
           
-          {/* Mobile Menu Button */}
           <div className="sm:hidden">
             <Link 
               to="/services" 
@@ -365,7 +357,7 @@ export default function Home() {
 
       {/* Main Hero Section */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center py-8 lg:py-16">
+        <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start py-8 lg:py-16">
           {/* Left Column - Hero Content */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -412,144 +404,145 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Professional Glass Dropdown Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.25 }}
-              className="relative dropdown-container"
-            >
-              <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 border border-white/20 hover:border-white/30 transition-all duration-300 shadow-2xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">Quick Access Portal</h3>
-                    <p className="text-xs text-slate-400">Choose a service to continue</p>
-                  </div>
-                </div>
-
-                {/* Dropdown Button */}
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-full group relative flex items-center justify-between px-6 py-4 rounded-xl backdrop-blur-md bg-gradient-to-r from-slate-800/50 to-slate-900/50 hover:from-slate-700/50 hover:to-slate-800/50 border border-white/20 hover:border-white/40 transition-all duration-300"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            {/* Professional Glass Dropdown Section - FIXED POSITIONING */}
+            <div className="relative z-20 dropdown-container">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.25 }}
+                className="relative"
+              >
+                <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 border border-white/20 hover:border-white/30 transition-all duration-300 shadow-2xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                     </div>
-                    <span className="font-medium text-white">Select an option</span>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Quick Access Portal</h3>
+                      <p className="text-xs text-slate-400">Choose a service to continue</p>
+                    </div>
                   </div>
-                  <motion.svg
-                    animate={{ rotate: isDropdownOpen ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+
+                  {/* Dropdown Button */}
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="w-full group relative flex items-center justify-between px-6 py-4 rounded-xl backdrop-blur-md bg-gradient-to-r from-slate-800/50 to-slate-900/50 hover:from-slate-700/50 hover:to-slate-800/50 border border-white/20 hover:border-white/40 transition-all duration-300"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </motion.svg>
-                </button>
-
-                {/* Dropdown Menu */}
-                <AnimatePresence>
-                  {isDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute z-50 w-full mt-2 left-0"
-                    >
-                      <div className="backdrop-blur-2xl bg-slate-900/95 rounded-xl border border-white/20 shadow-2xl overflow-hidden">
-                        <div className="p-2 space-y-1">
-                          {externalLinks.map((link) => (
-                            <motion.button
-                              key={link.id}
-                              whileHover={{ scale: 1.02, x: 5 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => handleLinkSelect(link)}
-                              className="w-full group relative flex items-start gap-4 p-4 rounded-lg hover:bg-white/10 transition-all duration-300 text-left overflow-hidden"
-                            >
-                              {/* Hover gradient effect */}
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
-                              
-                              {/* Icon */}
-                              <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${link.bgGradient} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                                <span className="text-2xl">{link.icon}</span>
-                              </div>
-                              
-                              {/* Content */}
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between mb-1">
-                                  <h4 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
-                                    {link.title}
-                                  </h4>
-                                  <span className={`text-xs px-2 py-1 rounded-full bg-gradient-to-r ${link.bgGradient} text-white/80`}>
-                                    {link.category}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-slate-400 mb-2">{link.description}</p>
-                                <div className={`inline-flex items-center gap-2 text-xs font-medium bg-gradient-to-r ${link.color} bg-clip-text text-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}>
-                                  <span>{link.buttonText}</span>
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                  </svg>
-                                </div>
-                              </div>
-                            </motion.button>
-                          ))}
-                        </div>
-                        
-                        {/* Footer info */}
-                        <div className="border-t border-white/10 p-3 bg-white/5">
-                          <p className="text-xs text-slate-500 text-center flex items-center justify-center gap-2">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                            Secure & Encrypted Access
-                          </p>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
+                      <span className="font-medium text-white">Select an option</span>
+                    </div>
+                    <motion.svg
+                      animate={{ rotate: isDropdownOpen ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </motion.svg>
+                  </button>
 
-            {/* Quote Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="mt-8 p-6 rounded-2xl bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-white/10 backdrop-blur-sm"
-            >
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
+                  {/* Dropdown Menu - NOW WITH PROPER POSITIONING */}
+                  <AnimatePresence>
+                    {isDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute z-50 w-full mt-2 left-0"
+                        style={{ top: '100%' }}
+                      >
+                        <div className="backdrop-blur-2xl bg-slate-900/95 rounded-xl border border-white/20 shadow-2xl overflow-hidden">
+                          <div className="p-2 space-y-1 max-h-[400px] overflow-y-auto">
+                            {externalLinks.map((link) => (
+                              <motion.button
+                                key={link.id}
+                                whileHover={{ scale: 1.02, x: 5 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleLinkSelect(link)}
+                                className="w-full group relative flex items-start gap-4 p-4 rounded-lg hover:bg-white/10 transition-all duration-300 text-left overflow-hidden"
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
+                                
+                                <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${link.bgGradient} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                                  <span className="text-2xl">{link.icon}</span>
+                                </div>
+                                
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <h4 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                                      {link.title}
+                                    </h4>
+                                    <span className={`text-xs px-2 py-1 rounded-full bg-gradient-to-r ${link.bgGradient} text-white/80`}>
+                                      {link.category}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-slate-400 mb-2">{link.description}</p>
+                                  <div className={`inline-flex items-center gap-2 text-xs font-medium bg-gradient-to-r ${link.color} bg-clip-text text-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}>
+                                    <span>{link.buttonText}</span>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </motion.button>
+                            ))}
+                          </div>
+                          
+                          <div className="border-t border-white/10 p-3 bg-white/5">
+                            <p className="text-xs text-slate-500 text-center flex items-center justify-center gap-2">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              Secure & Encrypted Access
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Quote Card - NOW WITH PROPER SPACING AND LOWER Z-INDEX */}
+            <div className="relative z-10 mt-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="p-6 rounded-2xl bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-white/10 backdrop-blur-sm"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-lg italic text-white leading-relaxed">"{quote.text}"</p>
+                    <footer className="mt-4 text-sm text-slate-300 font-medium">— {quote.author}</footer>
+                    {errors.quote && (
+                      <p className="text-xs text-yellow-400 mt-2">{errors.quote}</p>
+                    )}
                   </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-lg italic text-white leading-relaxed">"{quote.text}"</p>
-                  <footer className="mt-4 text-sm text-slate-300 font-medium">— {quote.author}</footer>
-                  {errors.quote && (
-                    <p className="text-xs text-yellow-400 mt-2">{errors.quote}</p>
-                  )}
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </motion.div>
 
-          {/* Right Column - Features Card */}
+          {/* Right Column - Features Card - REST OF YOUR CODE CONTINUES HERE */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -634,7 +627,8 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* NEW SECTION: Government Certificates */}
+        {/* REST OF YOUR SECTIONS (Certificates, Testimonials, CTA, Footer) REMAIN THE SAME */}
+        {/* Government Certificates Section */}
         {certificates.length > 0 && (
           <motion.section
             initial={{ opacity: 0, y: 40 }}
@@ -661,7 +655,6 @@ export default function Home() {
                   onClick={() => handleViewPdf(cert)}
                 >
                   <div className="flex items-start gap-4">
-                    {/* Certificate Icon */}
                     <div className="flex-shrink-0">
                       <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
                         <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -669,20 +662,14 @@ export default function Home() {
                         </svg>
                       </div>
                     </div>
-
-                    {/* Certificate Info */}
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-white mb-2">{cert.title}</h3>
                       <p className="text-sm text-slate-400 mb-3">{cert.description}</p>
-                      
-                      {/* Certificate Number (if available) */}
                       {cert.certificate_number && (
                         <p className="text-xs text-slate-500 font-mono mb-3">
                           Cert. No: {cert.certificate_number}
                         </p>
                       )}
-
-                      {/* Issue Date (if available) */}
                       {cert.issue_date && (
                         <p className="text-xs text-slate-500">
                           Issued: {new Date(cert.issue_date).toLocaleDateString('en-NG', {
@@ -692,8 +679,6 @@ export default function Home() {
                           })}
                         </p>
                       )}
-
-                      {/* View Button */}
                       <div className="mt-4 flex items-center text-blue-400 group-hover:text-blue-300 transition-colors">
                         <span className="text-sm font-medium">View Certificate</span>
                         <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -702,14 +687,11 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Hover Effect Overlay */}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/0 via-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:via-blue-500/5 group-hover:to-purple-500/5 transition-all duration-300 pointer-events-none"></div>
                 </motion.div>
               ))}
             </div>
 
-            {/* Trust Badge */}
             <div className="mt-8 text-center">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20">
                 <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">

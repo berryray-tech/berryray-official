@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import NewsBanner from "../components/NewsBanner";
 import Testimonies from "./Admin/Testimonies";
 import { Link } from "react-router-dom";
@@ -8,7 +8,7 @@ import supabase from "../lib/supabaseClient";
 // Updated imports - make sure the file name matches exactly
 import { 
   fetchActiveBanners, 
-  fetchPublicTestimonies  // Changed from fetchApprovedTestimonies
+  fetchPublicTestimonies
 } from "../services/adminContentService";
 
 export default function Home() {
@@ -46,7 +46,7 @@ export default function Home() {
       id: 2,
       title: "Google Classroom",
       description: "Access your courses and materials",
-      url: "https://classroom.google.com", // Replace with your actual Google Classroom link
+      url: "https://classroom.google.com",
       icon: "🎓",
       color: "from-green-500 to-green-600",
       bgGradient: "from-green-500/20 to-green-600/20",
@@ -57,7 +57,7 @@ export default function Home() {
       id: 3,
       title: "Web App Portal",
       description: "Access student portal and resources",
-      url: "https://your-web-app.com", // Replace with your actual web app URL
+      url: "https://your-web-app.com",
       icon: "🌐",
       color: "from-purple-500 to-purple-600",
       bgGradient: "from-purple-500/20 to-purple-600/20",
@@ -83,6 +83,140 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isDropdownOpen]);
 
+  // Memoized fetch functions to prevent unnecessary re-renders
+  const fetchQuote = useCallback(async () => {
+    try {
+      // Set a timeout for the fetch
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Quote fetch timeout')), 3000)
+      );
+      
+      const fetchPromise = supabase
+        .from("site_meta")
+        .select("value")
+        .eq("key", "home_quote")
+        .single();
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (error || !data?.value) {
+        throw new Error('No custom quote found');
+      }
+
+      try {
+        const parsed = JSON.parse(data.value);
+        return parsed;
+      } catch (parseError) {
+        console.error("Error parsing quote:", parseError);
+        return {
+          text: "Science is a way of thinking much more than it is a body of knowledge.",
+          author: "Carl Sagan",
+        };
+      }
+    } catch (error) {
+      console.log("Using default quote");
+      return {
+        text: "Science is a way of thinking much more than it is a body of knowledge.",
+        author: "Carl Sagan",
+      };
+    }
+  }, []);
+
+  const fetchCertificates = useCallback(async () => {
+    try {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Certificates fetch timeout')), 5000)
+      );
+      
+      const fetchPromise = supabase
+        .from("certificates")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+        .limit(10); // Limit the number of certificates
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (error) {
+        console.error("Error fetching certificates:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Error in fetchCertificates:", error);
+      return [];
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function loadData() {
+      try {
+        setLoading(true);
+        setErrors({ banners: null, testimonies: null, quote: null });
+
+        // Load critical data first (banners and quote)
+        const [bannerData, quoteData] = await Promise.allSettled([
+          fetchActiveBanners(),
+          fetchQuote()
+        ]);
+
+        // Handle banners (critical)
+        if (bannerData.status === 'fulfilled' && isMounted) {
+          setBanners(bannerData.value || []);
+        } else if (isMounted) {
+          console.error("Error loading banners:", bannerData.reason);
+          setErrors(prev => ({ ...prev, banners: "Failed to load news banners" }));
+        }
+
+        // Handle quote (critical)
+        if (quoteData.status === 'fulfilled' && isMounted) {
+          setQuote(quoteData.value);
+        } else if (isMounted) {
+          setErrors(prev => ({ ...prev, quote: "Using default quote" }));
+        }
+
+        // Load non-critical data after a small delay
+        setTimeout(async () => {
+          if (!isMounted) return;
+          
+          const [testimonyData, certificateData] = await Promise.allSettled([
+            fetchPublicTestimonies(),
+            fetchCertificates()
+          ]);
+
+          if (testimonyData.status === 'fulfilled' && isMounted) {
+            setTestimonies(testimonyData.value || []);
+          } else if (isMounted) {
+            console.error("Error loading testimonies:", testimonyData.reason);
+            setErrors(prev => ({ ...prev, testimonies: "Failed to load testimonials" }));
+          }
+
+          if (certificateData.status === 'fulfilled' && isMounted) {
+            setCertificates(certificateData.value || []);
+          } else if (isMounted) {
+            console.error("Error loading certificates:", certificateData.reason);
+          }
+        }, 100);
+
+      } catch (error) {
+        console.error("Unexpected error loading home page data:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchQuote, fetchCertificates]);
+
   // Function to handle PDF viewing
   const handleViewPdf = (certificate) => {
     setSelectedPdf(certificate);
@@ -92,18 +226,15 @@ export default function Home() {
     setSelectedPdf(null);
   };
 
-  // Show a loading state while fetching critical content
-  if (loading) {
+  // Show minimal loading state (faster)
+  if (loading && banners.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6">
         <div className="relative">
           <div className="w-16 h-16 border-4 border-blue-500/30 rounded-full"></div>
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
         </div>
-        <p className="text-lg font-medium mt-6">Preparing Your Experience</p>
-        <p className="text-sm text-slate-400 mt-2 max-w-md text-center">
-          Loading the latest content and resources for you...
-        </p>
+        <p className="text-lg font-medium mt-6">Loading...</p>
       </div>
     );
   }
@@ -111,53 +242,70 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white overflow-hidden">
       {/* PDF Viewer Modal */}
-      {selectedPdf && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={handleClosePdf}>
-          <div className="relative w-full max-w-4xl h-[80vh] bg-white rounded-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="absolute top-4 right-4 z-10 flex gap-2">
-              <a
-                href={selectedPdf.file_url}
-                download={selectedPdf.title}
-                className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
-                title="Download PDF"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </a>
-              <button
-                onClick={handleClosePdf}
-                className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-lg"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <iframe
-              src={`${selectedPdf.file_url}#toolbar=0&navpanes=0`}
-              className="w-full h-full"
-              title={selectedPdf.title}
-            />
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {selectedPdf && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" 
+            onClick={handleClosePdf}
+          >
+            <motion.div 
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative w-full max-w-4xl h-[80vh] bg-white rounded-2xl overflow-hidden" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute top-4 right-4 z-10 flex gap-2">
+                <a
+                  href={selectedPdf.file_url}
+                  download={selectedPdf.title}
+                  className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
+                  title="Download PDF"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </a>
+                <button
+                  onClick={handleClosePdf}
+                  className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <iframe
+                src={`${selectedPdf.file_url}#toolbar=0&navpanes=0`}
+                className="w-full h-full"
+                title={selectedPdf.title}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Show error messages if any */}
-      {errors.banners && (
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-300 p-4 text-center backdrop-blur-sm"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <span>{errors.banners}</span>
-          </div>
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {errors.banners && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-300 p-4 text-center backdrop-blur-sm"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span>{errors.banners}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Pass the fetched banners data as a prop */}
       <NewsBanner banners={banners} />
@@ -502,7 +650,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {certificates.map((cert, index) => (
+              {certificates.slice(0, 4).map((cert, index) => (
                 <motion.div
                   key={cert.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -704,8 +852,8 @@ export default function Home() {
               © {new Date().getFullYear()} BerryRay Technologies. All rights reserved.
             </p>
             <p className="text-xs text-slate-600 mt-2">
-              CAC RC:  9351504 {certificates.find(c => c.title.includes('CAC'))?.certificate_number || ''} | 
-              SMEDAN Reg: SUID-3622-7935-0075-7139 {certificates.find(c => c.title.includes('SMEDAN'))?.certificate_number || ''}
+              RC:  9351504 {certificates.find(c => c.title?.includes('CAC'))?.certificate_number || ''} | 
+              SMEDAN Reg: SUID-3622-7935-0075-7139 {certificates.find(c => c.title?.includes('SMEDAN'))?.certificate_number || ''}
             </p>
           </div>
         </div>
